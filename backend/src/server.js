@@ -1,5 +1,6 @@
 require("dotenv").config();
-require("../database/seed");
+const { connectRabbitMQ } = require("./rabbitmq");
+const { publishOrderCreated } = require("./rabbitmq");
 const createdAt = new Date().toISOString();
 
 const express = require("express");
@@ -8,8 +9,13 @@ const db = require("../database/db");
 
 const app = express();
 
+const allowedOrigins = [
+    "http://localhost:3000",
+    "http://localhost:5173",
+];
+
 app.use(cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:5173"
+    origin: allowedOrigins
 }));
 
 app.use(express.json());
@@ -25,7 +31,7 @@ app.get("/api/orders", (req, res) => {
     res.json(orders);
 });
 
-app.post("/api/orders", (req, res) => {
+app.post("/api/orders", async (req, res) => {
     const { nameClient, sku, amount } = req.body;
 
     if (
@@ -46,32 +52,38 @@ app.post("/api/orders", (req, res) => {
     VALUES (?, ?, ?, ?, ?)
   `).run(nameClient, sku, amount, 0, createdAt);
 
+    const order = {
+        id: result.lastInsertRowid,
+        sku: sku.trim(),
+        amount
+    };
+
+
+    const event = await publishOrderCreated(order);
+
+
     res.status(201).json({
         message: "Orden creada correctamente",
-        id: result.lastInsertRowid
+        id: result.lastInsertRowid,
+        eventId: event.eventId
     });
 
 });
 
 
-//Stock
-app.get("/api/stock", (req, res) => {
-    const stock = db.prepare("SELECT * FROM stock").all();
-
-    res.json(stock);
-});
-
-
-//products
-app.get("/api/products", (req, res) => {
-    const products = db.prepare("SELECT substr(sku, 1, instr(sku, '#') - 1) AS name, sku FROM stock").all();
-    res.json(products);
-});
-
-
-
 const PORT = process.env.PORT || 3001;
 
-app.listen(PORT, () => {
-    console.log(`Servidor ejecutándose en http://localhost:${PORT}`);
-});
+async function startServer() {
+    try {
+        await connectRabbitMQ();
+
+        app.listen(PORT, () => {
+            console.log(`Servidor ejecutándose en http://localhost:${PORT}`);
+        });
+    } catch (error) {
+        console.error("No se pudo iniciar el servidor:", error.message);
+        process.exit(1);
+    }
+}
+
+startServer();

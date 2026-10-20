@@ -15,14 +15,6 @@ db.exec(`
     createdAt TEXT
   );
 
-  CREATE TABLE IF NOT EXISTS stock (
-    sku TEXT,
-    available INTEGER
-  );
-
-  DELETE FROM orders;
-  DELETE FROM stock;
-
 `);
 
 module.exports = db;
