@@ -7,6 +7,7 @@ export default function Home() {
   const [isOpen, setIsOpen] = useState(false);
   const [selected, setSelected] = useState("")
   const [amount, setAmount] = useState(1);
+  const [clientname, setClientname] = useState("")
 
   useEffect(() => {
     async function getProducts() {
@@ -29,7 +30,7 @@ export default function Home() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          nameClient: "Cristian Miranda",
+          nameClient: clientname,
           sku: selected.sku,
           amount: amount,
         }),
@@ -37,15 +38,27 @@ export default function Home() {
 
       const data = await response.json();
 
+      if(clientname == ""){
+        alert("El nombre del cliente es requerido")
+        return;
+      }
+      if(amount < 1){
+        alert("La cantidad del producto no puede ser 0")
+        return;
+      }
+
+
       if (!response.ok) {
         throw new Error(data.message || "Error al crear el pedido");
       }
 
       alert("Pedido creado correctamente")
       console.log("Pedido creado:", data);
+      setIsOpen(false)
     } catch (error) {
-      console.log( error);
+      console.log(error);
       alert(error)
+      setIsOpen(false)
     }
   }
 
@@ -92,7 +105,21 @@ export default function Home() {
             </p>
 
             <div className="max-w-sm mx-auto mb-6">
-              <label className="block mb-2.5 text-sm font-medium text-heading">
+              <label className="block mb-2.5 text-sm text-heading">
+                Nombre del cliente:
+              </label>
+
+              <input
+                type="text"
+                id="client-input"
+                value={clientname}
+                onChange={(e) => setClientname((e.target.value))}
+                min="1"
+                className="block w-full px-3 mb-2.5 py-2.5 bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand shadow-xs placeholder:text-body"
+                required
+              />
+
+              <label className="block mb-2.5 text-sm text-heading">
                 Select un número:
               </label>
 
@@ -116,10 +143,10 @@ export default function Home() {
               </button>
 
               <button
-                onClick={() => { setIsOpen(false), buy(selected, amount), setAmount(1) }}
+                onClick={() => { buy(selected, amount), setAmount(1) }}
                 className="rounded-lg cursor-pointer bg-gray-700 px-4 py-2 text-white hover:bg-gray-600"
               >
-                Comprar
+                Hacer pedido
               </button>
             </div>
           </div>
