@@ -1,5 +1,6 @@
 require("dotenv").config();
 require("../database/seed");
+const createdAt = new Date().toISOString();
 
 const express = require("express");
 const cors = require("cors");
@@ -22,6 +23,34 @@ app.get("/api/orders", (req, res) => {
     const orders = db.prepare("SELECT * FROM orders").all();
 
     res.json(orders);
+});
+
+app.post("/api/orders", (req, res) => {
+    const { nameClient, sku, amount } = req.body;
+
+    if (
+        typeof nameClient !== "string" ||
+        !nameClient.trim() ||
+        typeof sku !== "string" ||
+        !sku.trim() ||
+        !Number.isInteger(amount) ||
+        amount <= 0 || amount > 100
+    ) {
+        return res.status(400).json({
+            message: "Los datos del pedido son inválidos"
+        });
+    }
+
+    const result = db.prepare(`
+    INSERT INTO orders (nameClient, sku, amount, state, createdAt)
+    VALUES (?, ?, ?, ?, ?)
+  `).run(nameClient, sku, amount, 0, createdAt);
+
+    res.status(201).json({
+        message: "Orden creada correctamente",
+        id: result.lastInsertRowid
+    });
+
 });
 
 
