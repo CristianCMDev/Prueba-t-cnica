@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 export default function Employee() {
   const [orders, setOrders] = useState([])
+  const [inventory, setInventory] = useState([])
 
 
   useEffect(() => {
@@ -13,8 +14,14 @@ export default function Employee() {
       setOrders(data);
       console.log(data)
     }
-
+    async function getInventory() {
+      const response = await fetch("http://localhost:3002/api/stock");
+      const data = await response.json();
+      setInventory(data);
+      console.log(data)
+    }
     getProducts()
+    getInventory()
   })
 
 
@@ -43,12 +50,41 @@ export default function Employee() {
                 <td className="px-4 py-2">{order.nameClient}</td>
                 <td className="px-4 py-2">{order.sku}</td>
                 <td className="px-4 py-2">{order.amount}</td>
-                <td className="px-4 py-2">{order.state}</td>
+                <td className="px-4 py-2">
+                  {order.state === 0
+                    ? "Pendiente"
+                    : order.state === 1
+                      ? "Confirmado"
+                      : order.state === 2
+                        ? "Denegado"
+                        : "Desconocido"}
+                </td>
                 <td className="px-4 py-2">{order.createdAt}</td>
               </tr>
             ))}
           </tbody>
         </table>
+
+        <h1 className="text-2xl py-8 font-semibold dark:text-white">Inventario</h1>
+
+        <table className="table-auto w-full text-left">
+          <thead>
+            <tr>
+              <th className="px-4 py-2">SKU</th>
+              <th className="px-4 py-2">Disponibles</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {inventory.map((inventory, index) => (
+              <tr key={index}>
+                <td className="px-4 py-2">{inventory.sku}</td>
+                <td className="px-4 py-2">{inventory.available}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
       </div>
 
     </div>

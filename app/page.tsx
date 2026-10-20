@@ -21,7 +21,15 @@ export default function Home() {
 
 
   const buy = async (selected, amount) => {
-    console.log(JSON.stringify(selected) + " " + amount)
+    if (!clientname.trim()) {
+      alert("El nombre del cliente es requerido");
+      return;
+    }
+
+    if (!Number.isInteger(amount) || amount < 1) {
+      alert("La cantidad debe ser un número entero mayor que 0");
+      return;
+    }
 
     try {
       const response = await fetch("http://localhost:3001/api/orders", {
@@ -32,35 +40,29 @@ export default function Home() {
         body: JSON.stringify({
           nameClient: clientname,
           sku: selected.sku,
-          amount: amount,
+          amount,
         }),
       });
 
       const data = await response.json();
 
-      if(clientname == ""){
-        alert("El nombre del cliente es requerido")
-        return;
-      }
-      if(amount < 1){
-        alert("La cantidad del producto no puede ser 0")
-        return;
-      }
-
-
       if (!response.ok) {
         throw new Error(data.message || "Error al crear el pedido");
       }
 
-      alert("Pedido creado correctamente")
+      alert("Pedido recibido; esperando confirmación de inventario");
+
       console.log("Pedido creado:", data);
-      setIsOpen(false)
+
+      setIsOpen(false);
+
+      // Aquí actualizaremos la lista de pedidos.
+      // También consultaremos el estado definitivo cuando el backend lo procese.
     } catch (error) {
-      console.log(error);
-      alert(error)
-      setIsOpen(false)
+      console.error(error);
+      alert(error instanceof Error ? error.message : "Error al crear el pedido");
     }
-  }
+  };
 
 
   return (
