@@ -33,6 +33,12 @@ app.get("/api/stock", (req, res) => {
 });
 
 
+//products
+app.get("/api/products", (req, res) => {
+    const products = db.prepare("SELECT substr(sku, 1, instr(sku, '#') - 1) AS name, sku FROM stock").all();
+    res.json(products);
+});
+
 
 
 const PORT = process.env.PORT || 3001;

@@ -19,6 +19,10 @@ db.exec(`
     sku TEXT,
     available INTEGER
   );
+
+  DELETE FROM orders;
+  DELETE FROM stock;
+
 `);
 
 module.exports = db;
