@@ -11,6 +11,71 @@ services:
       RABBITMQ_DEFAULT_PASS: local_dev_password
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - "3001:3001"
+    environment:
+      PORT: 3001
+      FRONTEND_URL: http://localhost:3000
+      RABBITMQ_URL: amqp://admin:local_dev_password@rabbitmq:5672
+    volumes:
+      - ./backend/database/app.db:/app/database/app.db
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  inventory-api:
+    build:
+      context: ./inventory-service
+    command: ["npm", "run", "server"]
+    ports:
+      - "3002:3002"
+    environment:
+      PORT: 3002
+      RABBITMQ_URL: amqp://admin:local_dev_password@rabbitmq:5672
+    volumes:
+      - ./inventory-service/database/inventory.db:/app/database/inventory.db
+
+  inventory-worker:
+    build:
+      context: ./inventory-service
+    command: ["node", "src/consumer.js"]
+    environment:
+      RABBITMQ_URL: amqp://admin:local_dev_password@rabbitmq:5672
+    volumes:
+      - ./inventory-service/database/inventory.db:/app/database/inventory.db
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  order-results-consumer:
+    build:
+      context: ./backend
+    command: ["node", "src/orderResultsConsumer.js"]
+    environment:
+      RABBITMQ_URL: amqp://admin:local_dev_password@rabbitmq:5672
+    volumes:
+      - ./backend/database/app.db:/app/database/app.db
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: .
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+      - inventory-api
 
 volumes:
   rabbitmq_data:
